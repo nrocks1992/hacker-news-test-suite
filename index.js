@@ -33,7 +33,7 @@ async function sortHackerNewsArticles(article_count) {
     }
   }
 
-  // Keep only the first 100 timestamps
+  // Keep only the first timestamps
   timestamps = timestamps.slice(0, article_count);
 
   // Convert timestamps into comparable numbers (milliseconds)
