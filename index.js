@@ -13,38 +13,35 @@ async function sortHackerNewsArticles(article_count) {
   let timestamps = [];
 
   while (timestamps.length < article_count) {
-    // Extract timestamps on the current page
-    const pageTimestamps = await page.$$eval(".age", els =>
-      els.map(e => e.getAttribute("title"))
-    );
+    // Extract timestamps using page.evaluate
+    const pageTimestamps = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll(".age"))
+        .map(el => el.getAttribute("title"));
+    });
 
     timestamps.push(...pageTimestamps);
 
-    // If we still need more, click to next page
     if (timestamps.length < article_count) {
-      const moreLink = await page.$("a.morelink");
-      if (!moreLink) {
-        throw new Error("Couldn't load enough articles (no more pages).");
-      }
+      // Click "More" safely from Node context
       await Promise.all([
         page.waitForNavigation(),
-        moreLink.click()
+        page.evaluate(() => {
+          document.querySelector("a.morelink").click();
+        })
       ]);
     }
   }
 
-  // Keep only the first timestamps
   timestamps = timestamps.slice(0, article_count);
 
-  // Convert timestamps into comparable numbers (milliseconds)
+  // Convert to milliseconds and validate order
   const times = timestamps.map(t => new Date(t).getTime());
 
-  // Validate sorted newest → oldest (descending)
   for (let i = 0; i < times.length - 1; i++) {
     if (times[i] < times[i + 1]) {
       throw new Error(
-        `Sorting error at article ${i} → ${i + 1}\n` +
-        `${timestamps[i]} should be >= ${timestamps[i + 1]}`
+        `❌ Sorting error at index ${i} → ${i + 1}\n` +
+        `${timestamps[i]} should be newer than ${timestamps[i + 1]}`
       );
     }
   }
