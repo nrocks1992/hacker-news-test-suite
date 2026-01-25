@@ -24,7 +24,7 @@ async function sortHackerNewsArticles(article_count) {
     if (timestamps.length < article_count) {
       // Click "More" safely from Node context
       await Promise.all([
-        page.waitForNavigation(),
+        page.waitForLoadState('networkidle'),
         page.evaluate(() => {
           document.querySelector("a.morelink").click();
         })
