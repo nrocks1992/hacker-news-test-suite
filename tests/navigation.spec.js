@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('Hacker News Tests', () => {
+test.describe('Hacker News Navigation Tests', () => {
   
   test('Homepage loads successfully', async ({ page }) => {
     // Navigate to Hacker News homepage

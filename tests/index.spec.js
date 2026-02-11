@@ -1,7 +1,7 @@
 // EDIT THIS FILE TO COMPLETE ASSIGNMENT QUESTION 1
 const { test, expect } = require('@playwright/test');
 
-test.describe('Hacker News Tests', () => {
+test.describe('QA Wolf Take Home Assignment', () => {
   test('Verify that the first 100 articles are sorted newest → oldest', async ({ page }) => { 
     await page.goto("https://news.ycombinator.com/newest");
 
