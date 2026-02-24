@@ -1,3 +1,7 @@
+# Edit: 
+
+I decided to use Playwright's built in test runner to implement the assignment and my other test scripts. The completed test suite can be run with the command `npx playwright test`. The original assignment solution can be run with `npx playwright test tests/index.spec.js`.
+
 # 🐺 QA Wolf Take Home Assignment
 
 Welcome to the QA Wolf take home assignment for our [QA Engineer](https://www.task-wolf.com/apply-qae) role! We appreciate your interest and look forward to seeing what you come up with.
