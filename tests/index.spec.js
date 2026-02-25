@@ -1,135 +1,190 @@
 // EDIT THIS FILE TO COMPLETE ASSIGNMENT QUESTION 1
-/*const { test, expect } = require('@playwright/test');
-
-test.describe('QA Wolf Take Home Assignment', () => {
-  test('Verify that the first 100 articles are sorted newest → oldest', async ({ page }) => { 
-    await page.goto("https://news.ycombinator.com/newest");
-
-    let timestamps = [];
-    let article_count = 100;
-
-    while (timestamps.length < article_count) {
-      // Extract timestamps from the current page
-      const pageTimestamps = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll(".age"))
-          .map(el => el.getAttribute("title"));
-      });
-
-      timestamps.push(...pageTimestamps);
-
-      if (timestamps.length < article_count) {
-        // Click "More" safely from Node context
-        await Promise.all([
-          page.waitForLoadState('networkidle'),
-          page.evaluate(() => {
-            document.querySelector("a.morelink").click();
-          })
-        ]);
-      }
-    }
-
-    timestamps = timestamps.slice(0, article_count);
-
-    // Convert to milliseconds and validate order
-    const times = timestamps.map(t => new Date(t).getTime());
-
-    for (let i = 0; i < times.length - 1; i++) {
-      if (times[i] < times[i + 1]) {
-        throw new Error(
-          `❌ Sorting error at index ${i} → ${i + 1}\n` +
-          `${timestamps[i]} should be newer than ${timestamps[i + 1]}`
-        );
-      }
-    }
-  });
-});
-*/
 const { test, expect } = require('@playwright/test');
+const { parseHNTimestamp } = require('../utils/timestampParser');
 
-const TARGET_COUNT = 100;
-const MAX_PAGES = 5;
+// Number of articles we want to validate.
+// Change this value to validate 25, 50, 200, etc.
+const ARTICLE_COUNT = 100;
+
+// Safety guard to prevent infinite pagination loops
+// If the site structure changes, this prevents runaway tests.
+const MAX_PAGES = 10;
 
 test.describe('Hacker News - Newest Sorting', () => {
 
-  test('First 100 articles are sorted newest → oldest', async ({ page }) => {
+  test(`First ${ARTICLE_COUNT} articles are sorted newest → oldest`, async ({ page }) => {
 
+    // Navigate to the "newest" page of Hacker News
     await page.goto('https://news.ycombinator.com/newest', {
       waitUntil: 'domcontentloaded'
     });
 
-    await expect(page).toHaveURL(/newest/);
+    // This will accumulate articles across pagination
+    let collectedArticles = [];
 
-    let timestamps = [];
-    let ids = [];
+    // Track pagination depth for safety
     let pagesVisited = 0;
 
-    while (timestamps.length < TARGET_COUNT) {
+    /**
+     * PAGINATION LOOP
+     *
+     * Continue clicking "More" until we have collected
+     * at least ARTICLE_COUNT articles.
+     */
+    while (collectedArticles.length < ARTICLE_COUNT) {
       pagesVisited++;
-      expect(pagesVisited).toBeLessThanOrEqual(MAX_PAGES);
 
-      const pageData = await page.evaluate(() => {
-        const rows = Array.from(document.querySelectorAll('tr.athing'));
+      // Guard against infinite loops
+      expect(
+        pagesVisited,
+        `Exceeded MAX_PAGES=${MAX_PAGES}. Possible pagination loop.`
+      ).toBeLessThanOrEqual(MAX_PAGES);
 
-        const timestamps = [];
-        const ids = [];
-
-        rows.forEach(row => {
-          const id = row.getAttribute('id');
-          const ageEl = row.nextElementSibling?.querySelector('.age');
-
-          if (id && ageEl) {
-            ids.push(id);
-            timestamps.push(ageEl.getAttribute('title'));
-          }
-        });
-
-        return { timestamps, ids };
+      /**
+       * Capture the ID of the first article before clicking "More".
+       * We'll use this to detect when the page has changed.
+       */
+      const previousFirstId = await page.evaluate(() => {
+        const first = document.querySelector('tr.athing');
+        return first ? first.getAttribute('id') : null;
       });
 
-      expect(pageData.timestamps.length).toBeGreaterThan(0);
+      /**
+       * Extract visible articles from the current page.
+       *
+       * Hacker News structure:
+       * - Each article row has class "athing"
+       * - The next row contains metadata including timestamp
+       */
+      const pageArticles = await page.evaluate(() => {
+        const rows = Array.from(document.querySelectorAll('tr.athing'));
 
-      timestamps.push(...pageData.timestamps);
-      ids.push(...pageData.ids);
+        return rows.map(row => {
+          const id = row.getAttribute('id') || null;
+          const title = row.querySelector('.titleline a')?.innerText || '';
 
-      if (timestamps.length >= TARGET_COUNT) break;
+          // Metadata row (contains timestamp)
+          const subRow = row.nextElementSibling;
 
+          // Timestamp is usually stored on span.age
+          const ageSpan = subRow?.querySelector('.age') || null;
+          const ageLink = subRow?.querySelector('.age a') || null;
+
+          // Extract title attribute containing timestamp data
+          const isoTimestamp =
+            ageSpan?.getAttribute('title') ||
+            ageLink?.getAttribute('title') ||
+            null;
+
+          return { id, title, isoTimestamp };
+        });
+      });
+
+      // Sanity check: ensure articles were found
+      expect(pageArticles.length, 'No articles found on page.')
+        .toBeGreaterThan(0);
+
+      // Append results to master list
+      collectedArticles.push(...pageArticles);
+
+      // Stop paginating if we have enough
+      if (collectedArticles.length >= ARTICLE_COUNT) break;
+
+      /**
+       * Click "More" to load the next page.
+       * Use locator-based visibility check to ensure stability.
+       */
       const moreLink = page.locator('a.morelink');
-      await expect(moreLink).toBeVisible();
+      await expect(moreLink,
+        'More link missing before reaching target count.'
+      ).toBeVisible();
 
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded' }),
-        moreLink.click()
-      ]);
+      await moreLink.click();
+
+      /**
+       * Wait until the first article ID changes,
+       * which confirms navigation completed.
+       */
+      await page.waitForFunction(
+        (prevId) => {
+          const first = document.querySelector('tr.athing');
+          const currentId = first ? first.getAttribute('id') : null;
+          return currentId && currentId !== prevId;
+        },
+        previousFirstId,
+        { timeout: 15000 }
+      );
     }
 
-    // Trim to exactly 100
-    timestamps = timestamps.slice(0, TARGET_COUNT);
-    ids = ids.slice(0, TARGET_COUNT);
+    // Ensure we collected at least the requested number
+    expect(
+      collectedArticles.length,
+      `Only collected ${collectedArticles.length} articles.`
+    ).toBeGreaterThanOrEqual(ARTICLE_COUNT);
 
-    // Ensure exactly 100 collected
-    expect(timestamps.length).toBe(TARGET_COUNT);
+    // Slice exactly the number we want to validate
+    const articlesToValidate =
+      collectedArticles.slice(0, ARTICLE_COUNT);
 
-    // Ensure unique articles
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(TARGET_COUNT);
+    /**
+     * Convert raw timestamp strings into numeric millisecond values.
+     * These numbers are directly comparable for sorting validation.
+     */
+    const timestamps = articlesToValidate.map(article =>
+      parseHNTimestamp(article.isoTimestamp)
+    );
 
-    // Parse timestamps safely
-    const times = timestamps.map((t, i) => {
-      const parsed = new Date(t).getTime();
-      expect(Number.isNaN(parsed)).toBeFalsy();
-      return parsed;
+    //INTENTIONAL FAILURE (for testing only)
+    //timestamps[5] = timestamps[0] + 999999999;
+
+    /**
+     * SORT VALIDATION STEP
+     *
+     * Confirm that each article is newer than or equal to
+     * the article immediately after it.
+     *
+     * We allow equality because multiple posts may share
+     * the same second-level timestamp.
+     */
+    await test.step(
+      `Validate order for first ${ARTICLE_COUNT} articles`,
+      async () => {
+        for (let i = 0; i < timestamps.length - 1; i++) {
+
+          if (timestamps[i] < timestamps[i + 1]) {
+
+            // Attach structured debugging info if failure occurs
+            await test.info().attach('sorting-error', {
+              body: Buffer.from(JSON.stringify({
+                index: i,
+                current: articlesToValidate[i],
+                next: articlesToValidate[i + 1],
+                currentMs: timestamps[i],
+                nextMs: timestamps[i + 1],
+              }, null, 2)),
+              contentType: 'application/json',
+            });
+
+            throw new Error(
+              `Sorting failed at ${i} → ${i + 1}:\n` +
+              `"${articlesToValidate[i].title}" (${articlesToValidate[i].isoTimestamp}) is older than\n` +
+              `"${articlesToValidate[i + 1].title}" (${articlesToValidate[i + 1].isoTimestamp})`
+            );
+          }
+        }
+      }
+    );
+
+    /**
+     * Optional summary attachment.
+     * Makes successful runs clearer in HTML report.
+     */
+    await test.info().attach('summary', {
+      body: Buffer.from(
+        `PASS: First ${ARTICLE_COUNT} articles are sorted newest → oldest.`
+      ),
+      contentType: 'text/plain',
     });
 
-    // Pairwise descending check (allow equality)
-    for (let i = 0; i < times.length - 1; i++) {
-      expect(times[i]).toBeGreaterThanOrEqual(times[i + 1]);
-    }
-
-    // Deterministic order validation
-    const sortedCopy = [...times].sort((a, b) => b - a);
-    expect(times).toEqual(sortedCopy);
-
   });
-
 });
-
