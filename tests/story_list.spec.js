@@ -1,4 +1,5 @@
 const { test, expect } = require('@playwright/test');
+test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe('Hacker News Story List Tests', () => {
 

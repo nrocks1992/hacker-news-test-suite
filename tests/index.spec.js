@@ -10,6 +10,7 @@ const ARTICLE_COUNT = 100;
 // If the site structure changes, this prevents runaway tests.
 const MAX_PAGES = 10;
 
+test.use({ storageState: { cookies: [], origins: [] } });
 test.describe('Hacker News - Newest Sorting', () => {
 
   test(`First ${ARTICLE_COUNT} articles are sorted newest → oldest`, async ({ page }) => {

@@ -23,6 +23,7 @@ module.exports = defineConfig({
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  globalSetup: require.resolve('./global-setup'),
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     // baseURL: 'http://127.0.0.1:3000',
@@ -35,17 +36,26 @@ module.exports = defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { browserName: 'chromium', storageState: '.auth/storageState.json' },
+      testIgnore: /.*\.logout\.spec\.js/,
     },
-
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: { browserName: 'firefox', storageState: '.auth/storageState.json' },
+      testIgnore: /.*\.logout\.spec\.js/,
     },
-
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      use: { browserName: 'webkit', storageState: '.auth/storageState.json' },
+      testIgnore: /.*\.logout\.spec\.js/,
+    },
+    {
+      name: 'logout-once',
+      use: { browserName: 'chromium', storageState: undefined },
+      testMatch: /.*\.logout\.spec\.js/,
+      workers: 1,
+      fullyParallel: false,
+      retries: 0,
     },
 
     /* Test against mobile viewports. */
