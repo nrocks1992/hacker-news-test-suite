@@ -6,7 +6,6 @@ test.describe('User Interaction Tests', () => {
   test('Login flow', async ({ page }) => {
     // Navigate to login page
     await page.goto('https://news.ycombinator.com/login');
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the login page
     await expect(page).toHaveURL(/login/);
@@ -26,7 +25,6 @@ test.describe('User Interaction Tests', () => {
     
     // Submit login form
     await submitButton.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify successful authentication by checking for logout link
     const logoutLink = page.locator('a[href^="logout"]');
@@ -43,12 +41,10 @@ test.describe('User Interaction Tests', () => {
   test('Logout flow', async ({ page }) => {
     // First, log in
     await page.goto('https://news.ycombinator.com/login');
-    await page.waitForLoadState('networkidle');
     
     await page.fill('input[name="acct"]', process.env.HN_TEST_USERNAME);
     await page.fill('input[name="pw"]', process.env.HN_TEST_PASSWORD);
     await page.click('input[type="submit"]');
-    await page.waitForLoadState('networkidle');
     
     // Verify logged in state
     const logoutLink = page.locator('#logout');
@@ -56,7 +52,6 @@ test.describe('User Interaction Tests', () => {
     
     // Click logout
     await logoutLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify logged out state - logout link should no longer be present
     await expect(logoutLink).toHaveCount(0);
@@ -76,7 +71,6 @@ test.describe('User Interaction Tests', () => {
   test('Submit story page', async ({ page }) => {
     // Navigate to submit page
     await page.goto('https://news.ycombinator.com/submit');
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the submit page
     await expect(page).toHaveURL(/submit/);
@@ -89,11 +83,9 @@ test.describe('User Interaction Tests', () => {
       await page.fill('input[name="acct"]', process.env.HN_TEST_USERNAME);
       await page.fill('input[name="pw"]', process.env.HN_TEST_PASSWORD);
       await page.click('input[type="submit"]');
-      await page.waitForLoadState('networkidle');
       
       // Navigate to submit page again after login
       await page.goto('https://news.ycombinator.com/submit');
-      await page.waitForLoadState('networkidle');
     }
     
     // Verify the submit form has required fields
@@ -126,7 +118,6 @@ test.describe('User Interaction Tests', () => {
   test('User profile page', async ({ page }) => {
     // Go to homepage
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Find the first story's submitter
     const firstStory = page.locator('.athing').first();
@@ -139,7 +130,6 @@ test.describe('User Interaction Tests', () => {
     
     // Click on the username
     await usernameLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the user profile page
     await expect(page).toHaveURL(new RegExp(`user\\?id=${username}`));
@@ -175,7 +165,6 @@ test.describe('User Interaction Tests', () => {
     
     // Optional: Click submissions to verify it works
     await submissionsLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the submissions page
     await expect(page).toHaveURL(new RegExp(`submitted\\?id=${username}`));

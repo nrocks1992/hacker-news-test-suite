@@ -6,9 +6,6 @@ test.describe('Hacker News Navigation Tests', () => {
     // Navigate to Hacker News homepage
     await page.goto('https://news.ycombinator.com/');
     
-    // Wait for the page to load
-    await page.waitForLoadState('networkidle');
-    
     // Verify the logo is present
     const logo = page.locator('a[href="news"]').first();
     await expect(logo).toBeVisible();
@@ -45,7 +42,6 @@ test.describe('Hacker News Navigation Tests', () => {
   test('Navigation links work', async ({ page }) => {
     // Navigate to homepage
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Test each navigation link
     const navLinks = [
@@ -61,22 +57,17 @@ test.describe('Hacker News Navigation Tests', () => {
       // Click the navigation link
       await page.locator(`a[href="${link.href}"]`).first().click();
       
-      // Wait for navigation
-      await page.waitForLoadState('networkidle');
-      
       // Verify URL changed to expected page
       await expect(page).toHaveURL(link.expectedUrl);
       
       // Navigate back to homepage for next test
       await page.goto('https://news.ycombinator.com/');
-      await page.waitForLoadState('networkidle');
     }
   });
 
   test('Pagination works', async ({ page }) => {
     // Navigate to homepage
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Get the first story title on page 1 for comparison
     const firstStoryPage1 = await page.locator('.athing').first().locator('.titleline > a').first().textContent();
@@ -86,9 +77,6 @@ test.describe('Hacker News Navigation Tests', () => {
     await expect(moreLink).toBeVisible();
     await expect(moreLink).toHaveText('More');
     await moreLink.click();
-    
-    // Wait for page 2 to load
-    await page.waitForLoadState('networkidle');
     
     // Verify URL changed to page 2
     await expect(page).toHaveURL(/\?p=2$/);
@@ -108,7 +96,6 @@ test.describe('Hacker News Navigation Tests', () => {
   test('Logo click returns to homepage', async ({ page }) => {
     // Start at a different page (e.g., "newest")
     await page.goto('https://news.ycombinator.com/newest');
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the "newest" page
     await expect(page).toHaveURL(/newest$/);
@@ -117,9 +104,6 @@ test.describe('Hacker News Navigation Tests', () => {
     const logo = page.locator('a[href="news"]').first();
     await expect(logo).toBeVisible();
     await logo.click();
-    
-    // Wait for navigation
-    await page.waitForLoadState('networkidle');
     
     // Verify we're back on the homepage
     await expect(page).toHaveURL(/news.ycombinator.com\/news\/?$/);
@@ -131,12 +115,10 @@ test.describe('Hacker News Navigation Tests', () => {
     
     // Test from another page (jobs)
     await page.goto('https://news.ycombinator.com/jobs');
-    await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/jobs$/);
     
     // Click logo again
     await logo.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify back on homepage
     await expect(page).toHaveURL(/news.ycombinator.com\/news\/?$/);

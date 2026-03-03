@@ -4,7 +4,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('Story elements display correctly', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Get the first story
     const firstStory = page.locator('.athing').first();
@@ -62,7 +61,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('External story links open correctly', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Find a story with an external link (not Ask HN/Show HN)
     const stories = page.locator('.athing');
@@ -93,7 +91,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('Comments link navigation', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Get the first story's ID
     const firstStory = page.locator('.athing').first();
@@ -106,7 +103,6 @@ test.describe('Hacker News Story List Tests', () => {
     
     // Click the comments link
     await commentsLink.click();
-    await page.waitForLoadState('networkidle');
     
     // Verify we're on the item page
     await expect(page).toHaveURL(new RegExp(`item\\?id=${storyId}`));
@@ -118,7 +114,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('Vote button appears for logged-in users', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Check if user is logged in by looking for logout link
     const logoutLink = page.locator('a[href^="logout"]');
@@ -149,7 +144,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('Hide functionality', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Check if user is logged in
     const logoutLink = page.locator('a[href^="logout"]');
@@ -174,7 +168,6 @@ test.describe('Hacker News Story List Tests', () => {
       const hideLink = page.locator(`a[href^="hide?id=${firstStoryId}"]`).first();
       await expect(hideLink).toBeVisible();
       await hideLink.click();
-      await page.waitForLoadState('networkidle');
       
       // Verify the story is no longer visible
       const storyAfterHide = page.locator(`#${firstStoryId}`);
@@ -184,7 +177,6 @@ test.describe('Hacker News Story List Tests', () => {
 
   test('Domain filtering', async ({ page }) => {
     await page.goto('https://news.ycombinator.com/');
-    await page.waitForLoadState('networkidle');
     
     // Find a story with a domain link
     const stories = page.locator('.athing');
@@ -203,7 +195,6 @@ test.describe('Hacker News Story List Tests', () => {
         
         // Click the domain link
         await domainLink.click();
-        await page.waitForLoadState('networkidle');
         break;
       }
     }
