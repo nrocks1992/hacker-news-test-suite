@@ -1,6 +1,8 @@
 // EDIT THIS FILE TO COMPLETE ASSIGNMENT QUESTION 1
 const { test, expect } = require('@playwright/test');
 const { parseHNTimestamp } = require('../utils/timestampParser');
+const { URLS } = require('../utils/HNConstants');
+const selectors = require('../utils/HNSelectors');
 
 // Number of articles we want to validate.
 // Change this value to validate 25, 50, 200, etc.
@@ -16,7 +18,7 @@ test.describe('Hacker News - Newest Sorting', () => {
   test(`First ${ARTICLE_COUNT} articles are sorted newest → oldest`, async ({ page }) => {
 
     // Navigate to the "newest" page of Hacker News
-    await page.goto('https://news.ycombinator.com/newest', {
+    await page.goto(URLS.NEW, {
       waitUntil: 'domcontentloaded'
     });
 
@@ -95,7 +97,7 @@ test.describe('Hacker News - Newest Sorting', () => {
        * Click "More" to load the next page.
        * Use locator-based visibility check to ensure stability.
        */
-      const moreLink = page.locator('a.morelink');
+      const moreLink = selectors.news.moreLink(page);
       await expect(moreLink,
         'More link missing before reaching target count.'
       ).toBeVisible();

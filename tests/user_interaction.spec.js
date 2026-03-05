@@ -1,17 +1,18 @@
 const { test, expect } = require('@playwright/test');
-require('dotenv').config();
+const selectors = require('../utils/HNSelectors');
+const { URLS } = require('../utils/HNConstants');
 
 test.describe('User Interaction Tests', () => {
 
   test('Login flow', async ({ page }) => {
-    await page.goto('https://news.ycombinator.com/');
+    await page.goto(URLS.HOME);
 
     // If you're already logged in, you might still see the login form,
     // but the nav should show your user + logout.
-    const logoutLink = page.locator('a[href^="logout"]');
+    const logoutLink = selectors.login.logoutLink(page);
     await expect(logoutLink).toBeVisible();
 
-    const usernameLink = page.locator(`a[href="user?id=${process.env.HN_TEST_USERNAME}"]`);
+    const usernameLink = selectors.news.usernameNavLink(page, process.env.HN_TEST_USERNAME);
     await expect(usernameLink).toBeVisible();
 
     await expect(page).toHaveURL(/news.ycombinator.com/);
@@ -19,30 +20,16 @@ test.describe('User Interaction Tests', () => {
 
   test('Submit story page', async ({ page }) => {
     // Navigate to submit page
-    await page.goto('https://news.ycombinator.com/submit');
+    await page.goto(URLS.SUBMIT);
 
     // Verify we're on the submit page
     await expect(page).toHaveURL(/submit/);
 
-    // Since we're logged in via storageState, this should usually be false,
-    // but keeping your logic intact is fine:
-    const loginRequired = await page.locator('input[name="acct"]').count() > 0;
-
-    if (loginRequired) {
-      // Log in first
-      await page.fill('input[name="acct"]', process.env.HN_TEST_USERNAME);
-      await page.fill('input[name="pw"]', process.env.HN_TEST_PASSWORD);
-      await page.click('input[type="submit"]');
-
-      // Navigate to submit page again after login
-      await page.goto('https://news.ycombinator.com/submit');
-    }
-
     // Verify the submit form has required fields
-    const titleInput = page.locator('input[name="title"]');
-    const urlInput = page.locator('input[name="url"]');
-    const textArea = page.locator('textarea[name="text"]');
-    const submitButton = page.locator('input[type="submit"][value="submit"]');
+    const titleInput = selectors.submit.titleInput(page);
+    const urlInput = selectors.submit.urlInput(page);
+    const textArea = selectors.submit.textArea(page);
+    const submitButton = selectors.submit.submitButton(page);
 
     // Verify URL field is present
     await expect(urlInput).toBeVisible();
@@ -57,23 +44,23 @@ test.describe('User Interaction Tests', () => {
     await expect(submitButton).toBeVisible();
 
     // Verify form instructions or labels are present
-    const formTable = page.locator('form table');
+    const formTable = selectors.submit.formTable(page);
     await expect(formTable).toBeVisible();
 
     // Verify "or" text between URL and text options
-    const orText = page.locator('text=/or/i');
+    const orText = selectors.submit.orText(page);
     await expect(orText).toBeVisible();
   });
 
   test('User profile page', async ({ page }) => {
     // Go to homepage
-    await page.goto('https://news.ycombinator.com/');
+    await page.goto(URLS.HOME);
 
     // Find the first story's submitter
-    const firstStory = page.locator('.athing').first();
-    const storyId = await firstStory.getAttribute('id');
-    const subtextRow = firstStory.locator('xpath=following-sibling::tr[1]');
-    const usernameLink = subtextRow.locator('.hnuser').first();
+    const firstStory = selectors.news.stories(page).first();
+    const subtextRow = selectors.profile.subtextRow(firstStory);
+
+    const usernameLink = selectors.news.usernameLink(subtextRow);
 
     // Get the username
     const username = await usernameLink.textContent();
@@ -87,28 +74,28 @@ test.describe('User Interaction Tests', () => {
     // Verify profile elements are present
     
     // 1. User ID display
-    const userIdCell = page.locator('text=/user:/i').locator('xpath=following-sibling::td');
+    const userIdCell = selectors.profile.userIdCell(page);
     await expect(userIdCell).toBeVisible();
     const displayedUsername = await userIdCell.textContent();
     expect(displayedUsername.trim()).toBe(username.trim());
 
     // 2. Karma display
-    const karmaCell = page.locator('text=/karma:/i').locator('xpath=following-sibling::td');
+    const karmaCell = selectors.profile.karmaCell(page);
     await expect(karmaCell).toBeVisible();
     const karmaText = await karmaCell.textContent();
     expect(karmaText.trim()).toMatch(/^\d+$/);
 
     // 3. Created date
-    const createdCell = page.locator('text=/created:/i').locator('xpath=following-sibling::td');
+    const createdCell = selectors.profile.createdCell(page);
     await expect(createdCell).toBeVisible();
 
     // 4. About section (may be empty for some users)
-    const aboutRow = page.locator('text=/about:/i');
+    const aboutRow = selectors.profile.aboutRow(page);
     const aboutExists = await aboutRow.count() > 0;
     expect(aboutExists).toBeTruthy();
 
     // 5. Submissions link
-    const submissionsLink = page.locator('a[href^="submitted?id="]');
+    const submissionsLink = selectors.profile.submissionsLink(page);
     await expect(submissionsLink).toBeVisible();
     const submissionsText = await submissionsLink.textContent();
     expect(submissionsText).toMatch(/submissions/i);
@@ -120,7 +107,7 @@ test.describe('User Interaction Tests', () => {
     await expect(page).toHaveURL(new RegExp(`submitted\\?id=${username}`));
 
     // Verify submissions are displayed (if user has any)
-    const submissions = page.locator('.athing');
+    const submissions = selectors.profile.submissions(page);
     const submissionCount = await submissions.count();
     expect(submissionCount).toBeGreaterThanOrEqual(0);
   });

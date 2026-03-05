@@ -1,18 +1,16 @@
 // user-interaction.logout.spec.js
 const { test, expect } = require('@playwright/test');
+const selectors = require('../utils/HNSelectors');
+const methods = require('../utils/HNMethods');
 require('dotenv').config();
 
 test.describe('User Interaction Tests - Logout', () => {
   test('Logout flow', async ({ page }) => {
     // First, log in
-    await page.goto('https://news.ycombinator.com/login');
-
-    await page.fill('input[name="acct"]', process.env.HN_TEST_USERNAME);
-    await page.fill('input[name="pw"]', process.env.HN_TEST_PASSWORD);
-    await page.click('input[type="submit"]');
+    methods.login(page, process.env.HN_TEST_USERNAME, process.env.HN_TEST_PASSWORD);
 
     // Verify logged in state
-    const logoutLink = page.locator('a#logout');
+    const logoutLink = selectors.login.logoutLink(page);
     await expect(logoutLink).toBeVisible();
 
     // Click logout
@@ -22,11 +20,11 @@ test.describe('User Interaction Tests - Logout', () => {
     await expect(logoutLink).toHaveCount(0);
 
     // Verify login link appears
-    const loginLink = page.locator('a[href^="login"]');
+    const loginLink = selectors.login.loginLink(page);
     await expect(loginLink).toBeVisible();
 
     // Verify username is no longer in navigation
-    const usernameLink = page.locator(`a[href="user?id=${process.env.HN_TEST_USERNAME}"]`);
+    const usernameLink = selectors.news.usernameNavLink(page, process.env.HN_TEST_USERNAME);
     await expect(usernameLink).toHaveCount(0);
 
     // Verify we're still on a valid HN page

@@ -1,5 +1,7 @@
 // global-setup.js
 const { chromium } = require('@playwright/test');
+const selectors = require('./utils/HNSelectors');
+const methods = require('./utils/HNMethods');
 require('dotenv').config();
 
 module.exports = async () => {
@@ -12,11 +14,7 @@ module.exports = async () => {
   const page = await context.newPage();
 
   // Login once
-  await page.goto('https://news.ycombinator.com/login');
-
-  await page.fill('input[name="acct"]', process.env.HN_TEST_USERNAME);
-  await page.fill('input[name="pw"]', process.env.HN_TEST_PASSWORD);
-  await page.click('input[type="submit"]');
+  methods.login(page, process.env.HN_TEST_USERNAME, process.env.HN_TEST_PASSWORD);
 
   // Verify logged in (keep it simple + robust)
   await page.waitForSelector('a[href^="logout"]');
