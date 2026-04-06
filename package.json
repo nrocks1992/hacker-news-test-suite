@@ -8,10 +8,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dotenv": "^17.3.1",
     "playwright": "^1.39.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.39.0",
+    "@playwright/test": "^1.58.0",
     "@types/node": "^20.8.9"
   }
 }

@@ -1,3 +1,38 @@
+# Edit: 
+
+I decided to use Playwright's built in test runner to implement the assignment and my other test scripts. The completed test suite can be run with the command `npx playwright test`. The original assignment solution can be run with `npx playwright test tests/index.spec.js`.
+
+# A Note on the Login Scenarios:
+
+## Authentication Strategy
+
+To reduce unnecessary login traffic and improve test stability, I implemented a shared authenticated session using Playwright’s `storageState`.
+
+### Approach
+
+- A one-time authentication step generates a `.auth/storageState.json` file.
+- The user interaction test cases load this session so tests begin already authenticated.
+- This avoids performing the UI login flow before every test and keeps execution fast and stable.
+
+### Why This Design
+
+Running the login flow repeatedly — especially in parallel across browsers — can:
+- Slow down the suite
+- Create unnecessary load on the target site
+- Introduce instability due to repeated authentication
+
+Persisting a single session allows:
+- Parallel execution for the main test suite
+- Cleaner separation of authentication from feature validation
+- Reduced risk of rate limiting or session conflicts
+
+### Logout Handling
+
+The logout scenario is configured to run only once on a single browser project.  
+This prevents multiple login/logout cycles from invalidating the shared session or generating redundant authentication requests.
+
+This structure balances realistic authentication coverage with performance, stability, and responsible usage of the target application.
+
 # 🐺 QA Wolf Take Home Assignment
 
 Welcome to the QA Wolf take home assignment for our [QA Engineer](https://www.task-wolf.com/apply-qae) role! We appreciate your interest and look forward to seeing what you come up with.
